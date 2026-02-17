@@ -1,8 +1,7 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { BookOpen, MapPin, User, Clock, AlertCircle } from "lucide-react";
+import { BookOpen, MapPin, User, Clock, AlertCircle, Wifi, WifiOff } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { TIME_SLOTS } from "@/lib/constants";
 
 interface TimetableViewProps {
   degree: string;
@@ -17,70 +16,57 @@ interface ClassItem {
   faculty: string;
   room: string;
   type: "lecture" | "lab" | "tutorial" | "free";
+  ltp?: string;
 }
 
 export const TimetableView = ({ degree, year, batch, day }: TimetableViewProps) => {
-  const [classes, setClasses] = useState<ClassItem[]>([]);
+  const [allClasses, setAllClasses] = useState<Record<string, ClassItem[]>>({});
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [source, setSource] = useState<string>("loading");
 
   useEffect(() => {
     fetchTimetable();
-  }, [degree, year, batch, day]);
+  }, [degree, year, batch]);
 
   const fetchTimetable = async () => {
     setLoading(true);
-    setError(null);
 
     try {
       const { data, error: fnError } = await supabase.functions.invoke("fetch-timetable", {
-        body: { degree, year, batch, day },
+        body: { degree, year, batch },
       });
 
       if (fnError) throw fnError;
 
-      if (data?.classes && data.classes.length > 0) {
-        setClasses(data.classes);
+      if (data?.success && data.classes && Object.keys(data.classes).length > 0) {
+        // Transform the response: classes is { "Monday": [...], "Tuesday": [...] }
+        const transformed: Record<string, ClassItem[]> = {};
+        for (const [d, items] of Object.entries(data.classes)) {
+          transformed[d] = (items as any[]).map((item) => ({
+            time: item.time,
+            subject: item.subject,
+            faculty: item.faculty,
+            room: item.room,
+            type: item.type as ClassItem["type"],
+            ltp: item.ltp,
+          }));
+        }
+        setAllClasses(transformed);
+        setSource(data.source || "live");
       } else {
-        // Show demo data when no real data available
-        setClasses(getDemoClasses(day));
+        setAllClasses({});
+        setSource("unavailable");
       }
     } catch (err) {
       console.error("Error fetching timetable:", err);
-      // Fallback to demo data
-      setClasses(getDemoClasses(day));
+      setAllClasses({});
+      setSource("error");
     } finally {
       setLoading(false);
     }
   };
 
-  const getDemoClasses = (day: string): ClassItem[] => {
-    if (day === "Saturday") {
-      return TIME_SLOTS.slice(0, 4).map((time, i) => ({
-        time,
-        subject: ["Data Structures", "Operating Systems", "Database Management", "Soft Skills"][i],
-        faculty: ["Dr. Kumar", "Prof. Reddy", "Dr. Sharma", "Ms. Priya"][i],
-        room: [`LH-${101 + i}`, `LH-${201 + i}`, `Lab-${1 + i}`, `LH-${301 + i}`][i],
-        type: (["lecture", "lecture", "lab", "tutorial"] as const)[i],
-      }));
-    }
-    return TIME_SLOTS.map((time, i) => ({
-      time,
-      subject: [
-        "Data Structures & Algorithms",
-        "Computer Networks",
-        "Operating Systems",
-        "Database Management Systems",
-        "Software Engineering",
-        "Discrete Mathematics",
-        "Web Technologies Lab",
-        "Free Period",
-      ][i],
-      faculty: ["Dr. Kumar", "Prof. Reddy", "Dr. Sharma", "Prof. Rao", "Ms. Priya", "Dr. Suresh", "Prof. Anil", ""][i],
-      room: [`LH-${101 + i}`, `LH-${201 + i}`, `Lab-3`, `LH-${301 + i}`, `LH-${401 + i}`, `LH-102`, `CSE Lab-1`, ""][i],
-      type: (["lecture", "lecture", "lab", "lecture", "tutorial", "lecture", "lab", "free"] as const)[i],
-    }));
-  };
+  const classes = allClasses[day] || [];
 
   const getTypeStyles = (type: ClassItem["type"]) => {
     switch (type) {
@@ -103,8 +89,9 @@ export const TimetableView = ({ degree, year, batch, day }: TimetableViewProps) 
     };
     if (dayMap[day] !== today) return false;
 
-    const [start] = time.split(" - ");
+    const [start] = time.split("-").map((s) => s.trim());
     const [h, m] = start.split(":").map(Number);
+    if (isNaN(h) || isNaN(m)) return false;
     const classStart = h * 60 + m;
     const currentMin = now.getHours() * 60 + now.getMinutes();
     return currentMin >= classStart && currentMin < classStart + 50;
@@ -127,57 +114,81 @@ export const TimetableView = ({ degree, year, batch, day }: TimetableViewProps) 
   return (
     <div className="space-y-3">
       <div className="flex items-center gap-2 mb-4">
-        <span className="text-xs text-muted-foreground flex items-center gap-1">
-          <AlertCircle className="w-3 h-3" />
-          Showing demo schedule · Connect to live data via settings
-        </span>
+        {source === "live" ? (
+          <span className="text-xs text-teal flex items-center gap-1">
+            <Wifi className="w-3 h-3" />
+            Live from SR University
+          </span>
+        ) : (
+          <span className="text-xs text-muted-foreground flex items-center gap-1">
+            <WifiOff className="w-3 h-3" />
+            Could not connect to university server · Try again later
+          </span>
+        )}
       </div>
 
-      <AnimatePresence mode="popLayout">
-        {classes.map((cls, i) => (
-          <motion.div
-            key={`${day}-${cls.time}`}
-            initial={{ opacity: 0, x: -10 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: 10 }}
-            transition={{ delay: i * 0.05 }}
-            className={`glass rounded-xl p-4 transition-all ${getTypeStyles(cls.type)} ${
-              isCurrentClass(cls.time) ? "ring-2 ring-primary ring-offset-2 ring-offset-background" : ""
-            }`}
-          >
-            <div className="flex items-start justify-between">
-              <div className="flex-1">
-                <div className="flex items-center gap-2 mb-1">
-                  <Clock className="w-3.5 h-3.5 text-muted-foreground" />
-                  <span className="text-xs font-medium text-muted-foreground">{cls.time}</span>
-                  {isCurrentClass(cls.time) && (
-                    <span className="text-xs bg-primary text-primary-foreground px-2 py-0.5 rounded-full">
-                      Now
+      {classes.length === 0 ? (
+        <div className="glass rounded-xl p-8 text-center">
+          <AlertCircle className="w-8 h-8 text-muted-foreground mx-auto mb-3" />
+          <p className="text-muted-foreground font-medium">No classes on {day}</p>
+          <p className="text-xs text-muted-foreground/60 mt-1">
+            {source === "unavailable" || source === "error"
+              ? "University server may be down. Try refreshing."
+              : "Enjoy your day off!"}
+          </p>
+        </div>
+      ) : (
+        <AnimatePresence mode="popLayout">
+          {classes.map((cls, i) => (
+            <motion.div
+              key={`${day}-${cls.time}-${i}`}
+              initial={{ opacity: 0, x: -10 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: 10 }}
+              transition={{ delay: i * 0.05 }}
+              className={`glass rounded-xl p-4 transition-all ${getTypeStyles(cls.type)} ${
+                isCurrentClass(cls.time) ? "ring-2 ring-primary ring-offset-2 ring-offset-background" : ""
+              }`}
+            >
+              <div className="flex items-start justify-between">
+                <div className="flex-1">
+                  <div className="flex items-center gap-2 mb-1">
+                    <Clock className="w-3.5 h-3.5 text-muted-foreground" />
+                    <span className="text-xs font-medium text-muted-foreground">{cls.time}</span>
+                    {isCurrentClass(cls.time) && (
+                      <span className="text-xs bg-primary text-primary-foreground px-2 py-0.5 rounded-full">
+                        Now
+                      </span>
+                    )}
+                    <span className="text-xs text-muted-foreground/60 capitalize px-1.5 py-0.5 bg-muted rounded">
+                      {cls.type}
                     </span>
-                  )}
-                  <span className="text-xs text-muted-foreground/60 capitalize px-1.5 py-0.5 bg-muted rounded">
-                    {cls.type}
-                  </span>
-                </div>
-                <h3 className="font-display font-semibold text-foreground">{cls.subject}</h3>
-                {cls.type !== "free" && (
-                  <div className="flex flex-wrap gap-3 mt-1.5">
-                    <span className="text-xs text-muted-foreground flex items-center gap-1">
-                      <User className="w-3 h-3" /> {cls.faculty}
-                    </span>
-                    <span className="text-xs text-muted-foreground flex items-center gap-1">
-                      <MapPin className="w-3 h-3" /> {cls.room}
-                    </span>
+                    {cls.ltp && (
+                      <span className="text-xs text-muted-foreground/40 px-1.5 py-0.5">
+                        LTP: {cls.ltp}
+                      </span>
+                    )}
                   </div>
-                )}
+                  <h3 className="font-display font-semibold text-foreground">{cls.subject}</h3>
+                  {cls.type !== "free" && (
+                    <div className="flex flex-wrap gap-3 mt-1.5">
+                      <span className="text-xs text-muted-foreground flex items-center gap-1">
+                        <User className="w-3 h-3" /> {cls.faculty}
+                      </span>
+                      <span className="text-xs text-muted-foreground flex items-center gap-1">
+                        <MapPin className="w-3 h-3" /> {cls.room}
+                      </span>
+                    </div>
+                  )}
+                </div>
+                <div className="ml-4">
+                  <BookOpen className={`w-5 h-5 ${cls.type === "free" ? "text-muted" : "text-primary/50"}`} />
+                </div>
               </div>
-              <div className="ml-4">
-                <BookOpen className={`w-5 h-5 ${cls.type === "free" ? "text-muted" : "text-primary/50"}`} />
-              </div>
-            </div>
-          </motion.div>
-        ))}
-      </AnimatePresence>
+            </motion.div>
+          ))}
+        </AnimatePresence>
+      )}
     </div>
   );
 };
