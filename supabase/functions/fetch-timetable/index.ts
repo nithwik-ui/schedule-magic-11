@@ -146,8 +146,15 @@ Deno.serve(async (req) => {
 
 function inferType(ltp: string | undefined, subject: string | undefined): string {
   if (!ltp && !subject) return "lecture";
-  const ltpLower = (ltp || "").toLowerCase();
+  const ltpLower = (ltp || "").toLowerCase().trim();
   const subLower = (subject || "").toLowerCase();
+
+  // Direct string values from the API
+  if (ltpLower === "lecture") return "lecture";
+  if (ltpLower === "lab") return "lab";
+  if (ltpLower === "tutorial") return "tutorial";
+
+  // Fallback pattern matching
   if (subLower.includes("lab")) return "lab";
   if (ltpLower.includes("0-0-") || ltpLower.match(/\d+-\d+-[1-9]/)) return "lab";
   if (subLower.includes("tutorial")) return "tutorial";

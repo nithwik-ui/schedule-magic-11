@@ -1,12 +1,13 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Calendar, ArrowRight, GraduationCap } from "lucide-react";
+import { ArrowRight, GraduationCap, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
-import { DEGREES, YEARS } from "@/lib/constants";
+import { DEGREES } from "@/lib/constants";
+import { supabase } from "@/integrations/supabase/client";
 
 interface ProfileSetupProps {
   onComplete: () => void;
@@ -19,6 +20,59 @@ export const ProfileSetup = ({ onComplete }: ProfileSetupProps) => {
   const [year, setYear] = useState(profile?.year || "");
   const [batch, setBatch] = useState(profile?.batch || "");
   const [loading, setLoading] = useState(false);
+
+  const [years, setYears] = useState<string[]>([]);
+  const [batches, setBatches] = useState<string[]>([]);
+  const [loadingYears, setLoadingYears] = useState(false);
+  const [loadingBatches, setLoadingBatches] = useState(false);
+
+  // Fetch years when degree changes
+  useEffect(() => {
+    if (!degree) {
+      setYears([]);
+      setYear("");
+      setBatches([]);
+      setBatch("");
+      return;
+    }
+    setYear("");
+    setBatch("");
+    setBatches([]);
+    setLoadingYears(true);
+    supabase.functions.invoke("fetch-options", {
+      body: { action: "getYears", degree },
+    }).then(({ data, error }) => {
+      if (data?.success && Array.isArray(data.options)) {
+        setYears(data.options);
+      } else {
+        setYears([]);
+        console.error("Failed to fetch years:", error || data?.error);
+      }
+      setLoadingYears(false);
+    });
+  }, [degree]);
+
+  // Fetch batches when year changes
+  useEffect(() => {
+    if (!degree || !year) {
+      setBatches([]);
+      setBatch("");
+      return;
+    }
+    setBatch("");
+    setLoadingBatches(true);
+    supabase.functions.invoke("fetch-options", {
+      body: { action: "getBatches", degree, year },
+    }).then(({ data, error }) => {
+      if (data?.success && Array.isArray(data.options)) {
+        setBatches(data.options);
+      } else {
+        setBatches([]);
+        console.error("Failed to fetch batches:", error || data?.error);
+      }
+      setLoadingBatches(false);
+    });
+  }, [degree, year]);
 
   const handleSave = async () => {
     if (!degree || !year || !batch) {
@@ -74,14 +128,20 @@ export const ProfileSetup = ({ onComplete }: ProfileSetupProps) => {
 
           <div className="space-y-2">
             <Label className="text-foreground">Year</Label>
-            <Select value={year} onValueChange={setYear}>
+            <Select value={year} onValueChange={setYear} disabled={!degree || loadingYears}>
               <SelectTrigger>
-                <SelectValue placeholder="Select your year" />
+                {loadingYears ? (
+                  <span className="flex items-center gap-2 text-muted-foreground">
+                    <Loader2 className="w-4 h-4 animate-spin" /> Loading years...
+                  </span>
+                ) : (
+                  <SelectValue placeholder={!degree ? "Select a degree first" : "Select your year"} />
+                )}
               </SelectTrigger>
               <SelectContent>
-                {YEARS.map((y) => (
-                  <SelectItem key={y.value} value={y.value}>
-                    {y.label}
+                {years.map((y) => (
+                  <SelectItem key={y} value={y}>
+                    {y}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -90,14 +150,20 @@ export const ProfileSetup = ({ onComplete }: ProfileSetupProps) => {
 
           <div className="space-y-2">
             <Label className="text-foreground">Batch / Section</Label>
-            <Select value={batch} onValueChange={setBatch}>
+            <Select value={batch} onValueChange={setBatch} disabled={!year || loadingBatches}>
               <SelectTrigger>
-                <SelectValue placeholder="Select your batch" />
+                {loadingBatches ? (
+                  <span className="flex items-center gap-2 text-muted-foreground">
+                    <Loader2 className="w-4 h-4 animate-spin" /> Loading batches...
+                  </span>
+                ) : (
+                  <SelectValue placeholder={!year ? "Select a year first" : "Select your batch"} />
+                )}
               </SelectTrigger>
               <SelectContent>
-                {["A", "B", "C", "D", "E", "F", "G", "H"].map((b) => (
+                {batches.map((b) => (
                   <SelectItem key={b} value={b}>
-                    Batch {b}
+                    {b}
                   </SelectItem>
                 ))}
               </SelectContent>
