@@ -1,9 +1,20 @@
 export const DEGREES = [
+  { value: "ADMIN-CE", label: "ADMIN-CE" },
+  { value: "ADMIN-CSE", label: "ADMIN-CSE" },
+  { value: "ADMIN-ECE", label: "ADMIN-ECE" },
+  { value: "ADMIN-ME", label: "ADMIN-ME" },
+  { value: "ADMIN_BM-BM", label: "ADMIN BM" },
+  { value: "ADMIN_EEE-EEE", label: "ADMIN EEE" },
+  { value: "ADMIN_HSC-HSC", label: "ADMIN HSC" },
+  { value: "ADMIN_Math-Mathematics", label: "ADMIN Math" },
+  { value: "Admin_SoSH-English", label: "ADMIN SoSH (English)" },
   { value: "B.Com-BM", label: "B.Com" },
   { value: "B.Sc(Comp.)-CAI", label: "B.Sc (Computer)" },
   { value: "B.Sc.(Hons.)-AGRI", label: "B.Sc (Hons.) Agriculture" },
+  { value: "B.TECH", label: "B.TECH" },
   { value: "BBA-BM", label: "BBA" },
   { value: "BCA-CAI", label: "BCA" },
+  { value: "BTECH", label: "BTECH" },
   { value: "BTECH-CE", label: "B.Tech - CE" },
   { value: "BTECH-CSE", label: "B.Tech - CSE" },
   { value: "BTECH-ECE", label: "B.Tech - ECE" },
@@ -12,6 +23,7 @@ export const DEGREES = [
   { value: "BTECH-ME", label: "B.Tech - ME" },
   { value: "EXMBA-BM", label: "Executive MBA" },
   { value: "M.Sc.-AGRI", label: "M.Sc Agriculture" },
+  { value: "M.TECH", label: "M.TECH" },
   { value: "MBA-BM", label: "MBA" },
   { value: "MCA-CSE", label: "MCA" },
   { value: "MSc-CSE", label: "M.Sc CSE" },
@@ -21,13 +33,16 @@ export const DEGREES = [
   { value: "MTECH-EEE", label: "M.Tech - EEE" },
   { value: "MTECH-ME", label: "M.Tech - ME" },
   { value: "PHD", label: "PhD" },
-];
-
-export const YEARS = [
-  { value: "1", label: "1st Year" },
-  { value: "2", label: "2nd Year" },
-  { value: "3", label: "3rd Year" },
-  { value: "4", label: "4th Year" },
+  { value: "Phd-BM", label: "PhD - BM" },
+  { value: "Phd-CE", label: "PhD - CE" },
+  { value: "Phd-CSE", label: "PhD - CSE" },
+  { value: "Phd-ECE", label: "PhD - ECE" },
+  { value: "Phd-EEE", label: "PhD - EEE" },
+  { value: "Phd-ENG", label: "PhD - ENG" },
+  { value: "PhD-English", label: "PhD - English" },
+  { value: "PhD-HSc", label: "PhD - HSc" },
+  { value: "Phd-ME", label: "PhD - ME" },
+  { value: "PhD_Math-Mathematics", label: "PhD - Mathematics" },
 ];
 
 export const TIME_SLOTS = [
