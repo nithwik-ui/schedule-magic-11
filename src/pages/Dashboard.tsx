@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Calendar, LogOut, Settings, ChevronLeft, ChevronRight } from "lucide-react";
+import { LogOut, Settings, ChevronRight, GraduationCap } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
 import { ProfileSetup } from "@/components/ProfileSetup";
@@ -14,7 +14,7 @@ const Dashboard = () => {
   const [showSettings, setShowSettings] = useState(false);
   const [currentDay, setCurrentDay] = useState(() => {
     const today = new Date().getDay();
-    return today === 0 ? 0 : today - 1; // Map Sunday=0 to 0, Mon=0, Tue=1, etc.
+    return today === 0 ? 0 : today - 1;
   });
 
   useEffect(() => {
@@ -35,85 +35,99 @@ const Dashboard = () => {
     return <ProfileSetup onComplete={() => setShowSettings(false)} />;
   }
 
-  return (
-    <div className="min-h-screen bg-background">
-      {/* Header */}
-      <header className="sticky top-0 z-50 glass border-b border-border">
-        <div className="container mx-auto px-4 py-3 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
-              <Calendar className="w-4 h-4 text-primary-foreground" />
-            </div>
-            <span className="font-display font-bold text-foreground hidden sm:block">SRU Schedule</span>
-          </div>
+  const today = new Date();
+  const dayOfWeek = today.getDay();
+  const mondayOffset = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
+  const weekDates = DAYS.map((_, i) => {
+    const d = new Date(today);
+    d.setDate(today.getDate() + mondayOffset + i);
+    return d;
+  });
 
-          <div className="flex items-center gap-2">
-            <div className="text-right mr-2 hidden sm:block">
-              <p className="text-sm font-medium text-foreground">{profile?.full_name}</p>
-              <p className="text-xs text-muted-foreground">
-                {profile?.degree} · Year {profile?.year} · {profile?.batch}
-              </p>
-            </div>
-            <Button variant="ghost" size="icon" onClick={() => setShowSettings(true)} className="text-muted-foreground hover:text-foreground">
-              <Settings className="w-4 h-4" />
-            </Button>
-            <Button variant="ghost" size="icon" onClick={signOut} className="text-muted-foreground hover:text-destructive">
-              <LogOut className="w-4 h-4" />
-            </Button>
+  return (
+    <div className="min-h-screen bg-background flex flex-col">
+      {/* Header */}
+      <header className="sticky top-0 z-50 bg-background border-b border-border px-4 py-3 flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <div className="w-9 h-9 bg-primary rounded-lg flex items-center justify-center text-primary-foreground">
+            <GraduationCap className="w-5 h-5" />
           </div>
+          <h1 className="text-lg font-bold tracking-tight text-foreground">SR University</h1>
+        </div>
+        <div className="flex items-center gap-2">
+          <Button variant="ghost" size="icon" onClick={() => setShowSettings(true)} className="text-muted-foreground hover:text-foreground">
+            <Settings className="w-5 h-5" />
+          </Button>
+          <Button variant="ghost" size="icon" onClick={signOut} className="text-muted-foreground hover:text-destructive">
+            <LogOut className="w-5 h-5" />
+          </Button>
         </div>
       </header>
 
-      {/* Content */}
-      <main className="container mx-auto px-4 py-6">
-        <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-        >
-          {/* Day selector - mobile */}
-          <div className="flex items-center justify-between mb-6 sm:hidden">
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => setCurrentDay((d) => (d - 1 + DAYS.length) % DAYS.length)}
-            >
-              <ChevronLeft className="w-5 h-5" />
-            </Button>
-            <h2 className="text-lg font-display font-bold text-foreground">{DAYS[currentDay]}</h2>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => setCurrentDay((d) => (d + 1) % DAYS.length)}
-            >
-              <ChevronRight className="w-5 h-5" />
-            </Button>
+      <main className="flex-1 overflow-y-auto pb-8">
+        {/* Filter chips */}
+        <section className="px-4 pt-4 flex items-center gap-2 overflow-x-auto hide-scrollbar">
+          <div className="bg-card border border-border px-3 py-1.5 rounded-full flex items-center gap-2 shrink-0">
+            <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">{profile?.degree}</span>
           </div>
+          <div className="bg-card border border-border px-3 py-1.5 rounded-full flex items-center gap-2 shrink-0">
+            <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">{profile?.year}</span>
+          </div>
+          <div className="bg-card border border-border px-3 py-1.5 rounded-full flex items-center gap-2 shrink-0">
+            <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">{profile?.batch}</span>
+          </div>
+          <button
+            onClick={() => setShowSettings(true)}
+            className="shrink-0 w-10 h-10 bg-primary rounded-full flex items-center justify-center shadow-lg shadow-primary/20 ml-auto"
+          >
+            <Settings className="w-5 h-5 text-primary-foreground" />
+          </button>
+        </section>
 
-          {/* Day tabs - desktop */}
-          <div className="hidden sm:flex gap-2 mb-6 overflow-x-auto pb-2">
+        {/* Day Selector */}
+        <section className="mt-6 border-b border-border sticky top-[60px] bg-background/95 backdrop-blur-md z-40">
+          <div className="flex px-4 overflow-x-auto hide-scrollbar gap-6">
             {DAYS.map((day, i) => {
-              const isToday = new Date().getDay() - 1 === i;
+              const isToday = today.getDay() - 1 === i;
+              const dateNum = weekDates[i]?.getDate();
+              const shortDay = day.substring(0, 3);
               return (
                 <button
                   key={day}
                   onClick={() => setCurrentDay(i)}
-                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-all whitespace-nowrap ${
+                  className={`flex flex-col items-center py-3 border-b-2 min-w-[40px] transition-colors ${
                     currentDay === i
-                      ? "bg-primary text-primary-foreground teal-glow"
-                      : isToday
-                      ? "bg-primary/10 text-primary hover:bg-primary/20"
-                      : "text-muted-foreground hover:bg-muted"
+                      ? "border-primary"
+                      : "border-transparent"
                   }`}
                 >
-                  {day}
-                  {isToday && currentDay !== i && (
-                    <span className="ml-1.5 text-xs opacity-70">Today</span>
+                  <span className={`text-[10px] font-bold uppercase tracking-tighter ${
+                    currentDay === i ? "text-primary" : "text-muted-foreground"
+                  }`}>
+                    {shortDay}
+                  </span>
+                  <span className={`text-base font-bold ${
+                    currentDay === i ? "text-foreground" : "text-muted-foreground"
+                  }`}>
+                    {dateNum}
+                  </span>
+                  {isToday && (
+                    <div className={`w-1 h-1 rounded-full mt-0.5 ${
+                      currentDay === i ? "bg-primary" : "bg-muted-foreground"
+                    }`} />
                   )}
                 </button>
               );
             })}
           </div>
+        </section>
 
+        {/* Timetable */}
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="px-4 mt-6"
+        >
           <TimetableView
             degree={profile?.degree || ""}
             year={profile?.year || ""}
