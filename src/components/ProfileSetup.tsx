@@ -26,7 +26,6 @@ export const ProfileSetup = ({ onComplete }: ProfileSetupProps) => {
   const [loadingYears, setLoadingYears] = useState(false);
   const [loadingBatches, setLoadingBatches] = useState(false);
 
-  // Fetch years when degree changes
   useEffect(() => {
     if (!degree) {
       setYears([]);
@@ -52,7 +51,6 @@ export const ProfileSetup = ({ onComplete }: ProfileSetupProps) => {
     });
   }, [degree]);
 
-  // Fetch batches when year changes
   useEffect(() => {
     if (!degree || !year) {
       setBatches([]);
@@ -101,7 +99,7 @@ export const ProfileSetup = ({ onComplete }: ProfileSetupProps) => {
           <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto mb-4">
             <GraduationCap className="w-8 h-8 text-primary" />
           </div>
-          <h1 className="text-2xl font-display font-bold text-foreground mb-2">
+          <h1 className="text-2xl font-bold text-foreground mb-2">
             Set up your profile
           </h1>
           <p className="text-muted-foreground">
@@ -109,11 +107,11 @@ export const ProfileSetup = ({ onComplete }: ProfileSetupProps) => {
           </p>
         </div>
 
-        <div className="glass rounded-2xl p-6 space-y-5">
+        <div className="bg-card rounded-xl p-6 border border-border shadow-xl space-y-5">
           <div className="space-y-2">
-            <Label className="text-foreground">Degree / Program</Label>
+            <Label className="text-foreground text-sm font-semibold">Degree / Program</Label>
             <Select value={degree} onValueChange={setDegree}>
-              <SelectTrigger>
+              <SelectTrigger className="bg-background border-border">
                 <SelectValue placeholder="Select your degree" />
               </SelectTrigger>
               <SelectContent>
@@ -127,9 +125,9 @@ export const ProfileSetup = ({ onComplete }: ProfileSetupProps) => {
           </div>
 
           <div className="space-y-2">
-            <Label className="text-foreground">Year</Label>
+            <Label className="text-foreground text-sm font-semibold">Year</Label>
             <Select value={year} onValueChange={setYear} disabled={!degree || loadingYears}>
-              <SelectTrigger>
+              <SelectTrigger className="bg-background border-border">
                 {loadingYears ? (
                   <span className="flex items-center gap-2 text-muted-foreground">
                     <Loader2 className="w-4 h-4 animate-spin" /> Loading years...
@@ -149,9 +147,9 @@ export const ProfileSetup = ({ onComplete }: ProfileSetupProps) => {
           </div>
 
           <div className="space-y-2">
-            <Label className="text-foreground">Batch / Section</Label>
+            <Label className="text-foreground text-sm font-semibold">Batch / Section</Label>
             <Select value={batch} onValueChange={setBatch} disabled={!year || loadingBatches}>
-              <SelectTrigger>
+              <SelectTrigger className="bg-background border-border">
                 {loadingBatches ? (
                   <span className="flex items-center gap-2 text-muted-foreground">
                     <Loader2 className="w-4 h-4 animate-spin" /> Loading batches...
@@ -170,9 +168,13 @@ export const ProfileSetup = ({ onComplete }: ProfileSetupProps) => {
             </Select>
           </div>
 
-          <Button onClick={handleSave} className="w-full bg-primary hover:bg-teal-light text-primary-foreground teal-glow h-11" disabled={loading}>
+          <Button
+            onClick={handleSave}
+            className="w-full bg-primary hover:bg-primary/90 text-primary-foreground h-12 font-bold shadow-lg shadow-primary/20 gap-2 group"
+            disabled={loading}
+          >
             {loading ? "Saving..." : "Save & View Timetable"}
-            {!loading && <ArrowRight className="w-4 h-4 ml-2" />}
+            {!loading && <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />}
           </Button>
         </div>
       </motion.div>
