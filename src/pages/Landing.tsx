@@ -64,15 +64,11 @@ const Landing = () => {
               animate={{ opacity: 1, x: 0 }}
               className="flex gap-3"
             >
-              <Link to="/auth">
-                <Button variant="ghost" className="text-muted-foreground hover:text-foreground">
-                  Login
-                </Button>
+              <Link to="/view">
+                <Button variant="outline" className="text-foreground hover:bg-muted">Quick View</Button>
               </Link>
-              <Link to="/auth?tab=signup">
-                <Button className="bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg shadow-primary/20">
-                  Sign Up
-                </Button>
+              <Link to="/dashboard">
+                <Button variant="ghost" className="text-muted-foreground hover:text-foreground">My Schedule</Button>
               </Link>
             </motion.div>
           </nav>
@@ -115,15 +111,10 @@ const Landing = () => {
               transition={{ delay: 0.5 }}
               className="flex flex-col sm:flex-row gap-4 justify-center"
             >
-              <Link to="/auth?tab=signup">
+              <Link to="/view">
                 <Button size="lg" className="bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg shadow-primary/20 px-8 text-lg h-12 gap-2 group">
-                  Get Started Free
+                  Quick View
                   <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-                </Button>
-              </Link>
-              <Link to="/auth">
-                <Button size="lg" variant="outline" className="border-border text-foreground hover:bg-muted px-8 text-lg h-12">
-                  I have an account
                 </Button>
               </Link>
             </motion.div>

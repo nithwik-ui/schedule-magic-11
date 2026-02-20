@@ -11,7 +11,7 @@ interface Profile {
   batch: string | null;
 }
 
-interface AuthContextType {
+  interface AuthContextType {
   user: User | null;
   session: Session | null;
   profile: Profile | null;
@@ -19,7 +19,8 @@ interface AuthContextType {
   signUp: (email: string, password: string, fullName: string) => Promise<{ error: any }>;
   signIn: (email: string, password: string) => Promise<{ error: any }>;
   signOut: () => Promise<void>;
-  updateProfile: (data: Partial<Profile>) => Promise<{ error: any }>;
+  // updateProfile returns a source field to indicate where it was saved ('remote' | 'local')
+  updateProfile: (data: Partial<Profile>) => Promise<{ error: any; source?: "remote" | "local" }>;
   refreshProfile: () => Promise<void>;
 }
 
@@ -38,6 +39,19 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       .eq("user_id", userId)
       .single();
     setProfile(data);
+  };
+
+  const LOCAL_KEY = "sru_profile";
+
+  const loadLocalProfile = (): Profile | null => {
+    try {
+      const raw = localStorage.getItem(LOCAL_KEY);
+      if (!raw) return null;
+      return JSON.parse(raw) as Profile;
+    } catch (e) {
+      console.error("Failed to parse local profile:", e);
+      return null;
+    }
   };
 
   const refreshProfile = async () => {
@@ -68,6 +82,16 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     return () => subscription.unsubscribe();
   }, []);
 
+  // Load local profile immediately on mount (so preferences persist across refresh)
+  useEffect(() => {
+    try {
+      const local = loadLocalProfile();
+      if (local) setProfile(local);
+    } catch (e) {
+      // ignore
+    }
+  }, []);
+
   const signUp = async (email: string, password: string, fullName: string) => {
     const { error } = await supabase.auth.signUp({
       email,
@@ -91,13 +115,29 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   };
 
   const updateProfile = async (data: Partial<Profile>) => {
-    if (!user) return { error: "Not authenticated" };
-    const { error } = await supabase
-      .from("profiles")
-      .update(data)
-      .eq("user_id", user.id);
-    if (!error) await fetchProfile(user.id);
-    return { error };
+    if (user) {
+      const { error } = await supabase
+        .from("profiles")
+        .update(data)
+        .eq("user_id", user.id);
+      if (!error) await fetchProfile(user.id);
+      return { error, source: "remote" as const };
+    }
+
+    // Fallback to localStorage for unauthenticated users
+    try {
+      const existing = loadLocalProfile();
+      const merged = { ...(existing || {}), ...data } as Profile;
+      // Ensure minimal fields for our local profile object
+      if (!merged.id) merged.id = "local";
+      if (!merged.user_id) merged.user_id = "local";
+      localStorage.setItem(LOCAL_KEY, JSON.stringify(merged));
+      setProfile(merged);
+      return { error: null, source: "local" as const };
+    } catch (e) {
+      console.error("Failed to save local profile", e);
+      return { error: e };
+    }
   };
 
   return (

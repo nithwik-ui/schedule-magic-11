@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { ArrowRight, GraduationCap, Loader2 } from "lucide-react";
+import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -19,6 +20,7 @@ export const ProfileSetup = ({ onComplete }: ProfileSetupProps) => {
   const [degree, setDegree] = useState(profile?.degree || "");
   const [year, setYear] = useState(profile?.year || "");
   const [batch, setBatch] = useState(profile?.batch || "");
+  const [fullName, setFullName] = useState(profile?.full_name || "");
   const [loading, setLoading] = useState(false);
 
   const [years, setYears] = useState<string[]>([]);
@@ -78,11 +80,15 @@ export const ProfileSetup = ({ onComplete }: ProfileSetupProps) => {
       return;
     }
     setLoading(true);
-    const { error } = await updateProfile({ degree, year, batch });
-    if (error) {
-      toast({ title: "Failed to save", description: String(error), variant: "destructive" });
+    const result = await updateProfile({ degree, year, batch, full_name: fullName });
+    if (result.error) {
+      toast({ title: "Failed to save", description: String(result.error), variant: "destructive" });
     } else {
-      toast({ title: "Preferences saved!" });
+      if (result.source === "local") {
+        toast({ title: "Preferences saved to localStorage" });
+      } else {
+        toast({ title: "Preferences saved!" });
+      }
       onComplete();
     }
     setLoading(false);
@@ -108,6 +114,11 @@ export const ProfileSetup = ({ onComplete }: ProfileSetupProps) => {
         </div>
 
         <div className="bg-card rounded-xl p-6 border border-border shadow-xl space-y-5">
+          <div className="space-y-2">
+            <Label className="text-foreground text-sm font-semibold">Full Name</Label>
+            <Input value={fullName || ""} onChange={(e) => setFullName(e.target.value)} placeholder="Your name (used for notifications)" />
+          </div>
+
           <div className="space-y-2">
             <Label className="text-foreground text-sm font-semibold">Degree / Program</Label>
             <Select value={degree} onValueChange={setDegree}>
